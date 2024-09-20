@@ -1,3 +1,4 @@
+# Importere nødvændige biblioteker og scripts.
 import os
 import sys
 import io
@@ -6,76 +7,87 @@ from tensorflow.keras import datasets, layers, models
 import numpy as np
 import tkinter as tk
 from PIL import Image, ImageDraw
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
-# Reconfigure standard output and error to handle UTF-8 encoding
+# Ændre standard output og fejlkode til at kunne behandle UTF-8 indkodning
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
-# Suppress TensorFlow logging for cleaner output
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppresses INFO and WARNING logs
+# Undertrykker TensorFlow logning for et pænere output
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppresses INFO and WARNING logs
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disables oneDNN optimizations
 
-# Load the MNIST dataset (handwritten digits)
+# Indlæser MNIST datasættet
 def load_data():
     (train_images, train_labels), (test_images, test_labels) = datasets.mnist.load_data()
     train_images = train_images.reshape((60000, 28, 28, 1)).astype('float32') / 255
     test_images = test_images.reshape((10000, 28, 28, 1)).astype('float32') / 255
     return train_images, train_labels, test_images, test_labels
 
-# Build a simple CNN model
+# Bygger en simpel CNN model
 def create_model():
     model = tf.keras.Sequential([
         layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
         layers.MaxPooling2D((2, 2)),
-        layers.Dropout(0.25),  # Add dropout layer for better generalization
-        layers.Conv2D(64, (3, 3), activation='leaky_relu'),
+        layers.Dropout(0.25),
+        layers.Conv2D(64, (3, 3), activation='exponential'),
         layers.MaxPooling2D((2, 2)),
         layers.Dropout(0.25),
         layers.Conv2D(128, (3, 3), activation='leaky_relu'),
         layers.MaxPooling2D((2, 2)),
         layers.Dropout(0.25),
         layers.Flatten(),
-        layers.Dense(512, activation='exponential'),
+        layers.Dense(512),
         layers.Dropout(0.5),
         layers.Dense(10, activation='softmax')
     ])
-    model.compile(optimizer='adam',
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, loss_scale_factor=1),
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
     return model
 
-# Train the model
-def train_model(model, train_images, train_labels, test_images, test_labels):
-    history = model.fit(
-        train_images, train_labels,
-        epochs=10,
-        validation_data=(test_images, test_labels),
-        verbose=2  # Reduced verbosity to avoid clutter
-    )
+# Træn modellen og gem træningshistorikken
+def train_model(model, train_images, train_labels, val_images, val_labels):
+    history = model.fit(train_images, train_labels, epochs=10, validation_data=(val_images, val_labels), verbose=2)
+    return history
 
-# Predict drawn image
+# Plot læringskurver (træning og validering for både nøjagtighed og tab)
+def plot_learning_curves(history):
+    # Plot trænings- og valideringsnøjagtighed
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='Træningsnøjagtighed')
+    plt.plot(history.history['val_accuracy'], label='Valideringsnøjagtighed')
+    plt.title('Træning og Validering Nøjagtighed')
+    plt.xlabel('Epoker')
+    plt.ylabel('Nøjagtighed')
+    plt.legend()
+
+    # Plot trænings- og valideringstab
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='Træningstab')
+    plt.plot(history.history['val_loss'], label='Valideringstab')
+    plt.title('Træning og Validering Tab')
+    plt.xlabel('Epoker')
+    plt.ylabel('Tab')
+    plt.legend()
+
+    # Vise begge plots
+    plt.tight_layout()
+    plt.show()
+
+# Forudsig det tegnede billede
 def predict_digit(model, image):
     image = image.resize((28, 28)).convert('L')  # Convert to grayscale
-    image = np.array(image)  # Convert to numpy array
-    image = image.reshape(1, 28, 28, 1)  # Reshape for the model
-    image = image / 255.0  # Normalize
-    prediction = model.predict([image])[0]
+    image = np.array(image).reshape(1, 28, 28, 1) / 255.0  # Normalize
+    prediction = model.predict(image)[0]
     return np.argmax(prediction), max(prediction)
 
-# Map digits to names
-digit_to_name = {
-    0: "Zero",
-    1: "One",
-    2: "Two",
-    3: "Three",
-    4: "Four",
-    5: "Five",
-    6: "Six",
-    7: "Seven",
-    8: "Eight",
-    9: "Nine"
-}
+# Laver tal om til navne
+digit_to_name = {i: str(i) for i in range(10)}
 
-# GUI for drawing
+# GUI for tegning
 class App(tk.Tk):
     def __init__(self, model):
         super().__init__()
@@ -103,17 +115,22 @@ class App(tk.Tk):
 
     def predict(self):
         digit, acc = predict_digit(self.model, self.image1)
-        name = digit_to_name[digit]  # Map digit to name
-        print(f"Predicted Digit: {digit}, Name: {name}, Confidence: {acc:.2f}")  # Debug print
+        name = digit_to_name[digit]
         self.title(f"Prediction: {name}, Confidence: {acc:.2f}")
 
-# Load dataset
+# Indlæs datasæt
 train_images, train_labels, test_images, test_labels = load_data()
 
-# Create and train the model
-model = create_model()
-train_model(model, train_images, train_labels, test_images, test_labels)
+# Split træningsdata i trænings- og valideringssæt (80% træning, 20% validering)
+train_images, val_images, train_labels, val_labels = train_test_split(train_images, train_labels, test_size=0.2, random_state=42)
 
-# Run the app
+# Opret og træn modellen
+model = create_model()
+history = train_model(model, train_images, train_labels, val_images, val_labels)
+
+# Plot læringskurver
+plot_learning_curves(history)
+
+# Kør appen
 app = App(model)
 app.mainloop()
