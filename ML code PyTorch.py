@@ -117,19 +117,25 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=64, shuffle=F
 # Initialiserer model, loss og optimizer
 model = CNN()
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.00085, amsgrad=True)
 
 # Træn modellen og gem tab for graf
+# Træn modellen og gem tab og nøjagtighed for graf
 def train_model(model, train_loader, val_loader, epochs=10):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
 
     train_losses = []
     val_losses = []
+    train_accuracies = []
+    val_accuracies = []
 
     for epoch in range(epochs):
         model.train()
         running_loss = 0.0
+        correct_train = 0
+        total_train = 0
+
         for images, labels in train_loader:
             images, labels = images.to(device), labels.to(device)
             
@@ -139,39 +145,61 @@ def train_model(model, train_loader, val_loader, epochs=10):
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
+
+            _, predicted_train = torch.max(outputs.data, 1)
+            total_train += labels.size(0)
+            correct_train += (predicted_train == labels).sum().item()
         
         train_loss = running_loss / len(train_loader)
         train_losses.append(train_loss)
+        train_accuracy = 100 * correct_train / total_train
+        train_accuracies.append(train_accuracy)
 
-        print(f'Epoch {epoch+1}, Træningstab: {train_loss}')
-
+        print(f'Epoch {epoch+1}, Træningstab: {train_loss}, Træningsnøjagtighed: {train_accuracy}%')
+    
         # Validering
         model.eval()
         val_loss = 0.0
-        correct = 0
-        total = 0
+        correct_val = 0
+        total_val = 0
+
         with torch.no_grad():
             for images, labels in val_loader:
                 images, labels = images.to(device), labels.to(device)
                 outputs = model(images)
                 loss = criterion(outputs, labels)
                 val_loss += loss.item()
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
+
+                _, predicted_val = torch.max(outputs.data, 1)
+                total_val += labels.size(0)
+                correct_val += (predicted_val == labels).sum().item()
 
         val_loss /= len(val_loader)
         val_losses.append(val_loss)
-        print(f'Validationstab: {val_loss}, Nøjagtighed: {100 * correct / total}%')
+        val_accuracy = 100 * correct_val / total_val
+        val_accuracies.append(val_accuracy)
 
-    # Tegn graf for træning og valideringstab
-    plt.figure(figsize=(10,5))
-    plt.plot(train_losses, label='Træningstab')
-    plt.plot(val_losses, label='Validationstab')
-    plt.title('Tab under træning og validering')
-    plt.xlabel('Epoker')
-    plt.ylabel('Tab')
-    plt.legend()
+        print(f'Validationstab: {val_loss}, Valideringsnøjagtighed: {val_accuracy}%')
+
+    # Tegn graf for tab og nøjagtighed under træning og validering
+    fig, ax1 = plt.subplots(figsize=(10, 5))
+
+    ax1.set_xlabel('Epoker')
+    ax1.set_ylabel('Tab')
+    ax1.plot(train_losses, label='Træningstab', color='tab:blue')
+    ax1.plot(val_losses, label='Validationstab', color='tab:orange')
+    ax1.tick_params(axis='y')
+
+    ax2 = ax1.twinx()
+    ax2.set_ylabel('Nøjagtighed (%)')
+    ax2.plot(train_accuracies, label='Træningsnøjagtighed', color='tab:green', linestyle='--')
+    ax2.plot(val_accuracies, label='Valideringsnøjagtighed', color='tab:red', linestyle='--')
+    ax2.tick_params(axis='y')
+
+    fig.tight_layout()
+
+    fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9))
+    plt.title('Tab og nøjagtighed under træning og validering')
     plt.show()
 
 # Træn modellen
