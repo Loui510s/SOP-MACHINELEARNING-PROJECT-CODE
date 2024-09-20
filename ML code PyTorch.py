@@ -29,12 +29,14 @@ class CNN(nn.Module):
         self.fc1 = nn.Linear(128, 512)
         self.fc2 = nn.Linear(512, 10)
         self.dropout = nn.Dropout(0.25)
+        self.relu = nn.ReLU()
         self.leaky_relu = nn.LeakyReLU(0.2)
         self.elu = nn.ELU()
         self.softmax = nn.Softmax(dim=1)
+        self.mish = nn.Mish()
 
     def forward(self, x):
-        x = self.pool(self.elu(self.conv1(x)))
+        x = self.pool(self.mish(self.conv1(x)))
         x = self.dropout(x)
         x = self.pool(self.leaky_relu(self.conv2(x)))
         x = self.dropout(x)
@@ -117,9 +119,8 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=64, shuffle=F
 # Initialiserer model, loss og optimizer
 model = CNN()
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.00085, amsgrad=True)
+optimizer = optim.Adam(model.parameters(), lr=0.00085)
 
-# Træn modellen og gem tab for graf
 # Træn modellen og gem tab og nøjagtighed for graf
 def train_model(model, train_loader, val_loader, epochs=10):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
