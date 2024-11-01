@@ -3,3 +3,4 @@ This code is made for my study area project (SOP, Studie Område Projekt).
 In this code I try to make a Machine Learning model that can read handwriting based on numbers and letters drawn by hand.
 So far it's still in its prototype with recognizing numbers.
 I have a code using TensorFLow and a code using PyTorch, as I switched to PyTorch from Tensorflow as it is better for smaller environments and as it is easier to use and learn.
+ændre farverne
