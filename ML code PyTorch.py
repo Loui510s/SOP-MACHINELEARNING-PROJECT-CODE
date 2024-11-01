@@ -153,7 +153,7 @@ def train_model(model, train_loader, val_loader, epochs=10):
             correct_train += (predicted_train == labels).sum().item() # vurderer hvilke forudsigelser der er korrekte ift. labelsne
          
         train_loss = running_loss / len(train_loader) # laver en trainingloss funktion
-        train_losses.append(train_loss)s # læser tabne på træningssættet
+        train_losses.append(train_loss) # læser tabne på træningssættet
         train_accuracy = 100 * correct_train / total_train #laver en procentvis udregning af præcisionen for testne
         train_accuracies.append(train_accuracy) # aflæs det samlede præcision af træningerne
 
