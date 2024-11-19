@@ -224,7 +224,7 @@ def train_model(model, train_loader, val_loader, epochs=10):
         train_accuracy = 100 * correct_train / total_train
         train_accuracies.append(train_accuracy)
 
-        print(f'Epoch {epoch+1}, Training Loss: {train_loss}, Training Accuracy: {train_accuracy}%')
+        print(f'Epoch {epoch+1}, Training Loss: {train_loss}, Training Accuracy: {train_accuracy}%', flush=True)
         
         # Validation process
         model.eval() 
@@ -248,7 +248,7 @@ def train_model(model, train_loader, val_loader, epochs=10):
         val_accuracy = 100 * correct_val / total_val
         val_accuracies.append(val_accuracy)
 
-        print(f'Validation Loss: {val_loss}, Validation Accuracy: {val_accuracy}%')
+        print(f'Validation Loss: {val_loss}, Validation Accuracy: {val_accuracy}%', flush=True)
 
     # Plot loss and accuracy during training and validation
     fig, ax1 = plt.subplots(figsize=(10, 5))
@@ -268,7 +268,7 @@ def train_model(model, train_loader, val_loader, epochs=10):
     fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9))
     plt.title('Loss and Accuracy During Training and Validation')
     plt.show()
-
+    
 # Train the model
 train_model(model, train_loader, val_loader)
 
