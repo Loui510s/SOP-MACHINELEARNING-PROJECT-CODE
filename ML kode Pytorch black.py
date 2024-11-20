@@ -274,3 +274,5 @@ train_model(model, train_loader, val_loader)
 # Start the application
 app = App(model) 
 app.mainloop()
+
+torch.save(model.state_dict(), 'digit_model.pth')  # Save the model state
