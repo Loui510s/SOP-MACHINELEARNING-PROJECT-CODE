@@ -4,3 +4,4 @@ In this code I try to make a Machine Learning model that can read handwriting ba
 So far it's still in its prototype with recognizing numbers.
 I have a code using TensorFLow and a code using PyTorch, as I switched to PyTorch from Tensorflow as it is better for smaller environments and as it is easier to use and learn.
 The version named "black" is the one that works the best, as it is drawing on the same canvas as the data is made on.
+Install the requirements.txt to install all required libraries for "ML kode Pytorch black.py"
